@@ -1,6 +1,3 @@
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: MIT-0
-
 from aws_cdk import (
     aws_ec2 as ec2,
     aws_s3 as s3,
@@ -23,21 +20,17 @@ from constructs import Construct
 class MLflowStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
-        # ==============================
-        # ======= CFN PARAMETERS =======
-        # ==============================
+
+        # CloudFormation Parameters
         project_name_param = CfnParameter(scope=self, id="ProjectName", type="String")
         db_name = "mlflowdb"
         port = 3306
         username = "master"
         bucket_name = f"{project_name_param.value_as_string}-artifacts-{Aws.ACCOUNT_ID}"
-        container_repo_name = "mlflow-containers"
         cluster_name = "mlflow"
         service_name = "mlflow"
 
-        # ==================================================
-        # ================= IAM ROLE =======================
-        # ==================================================
+        # IAM
         role = iam.Role(
             scope=self,
             id="TASKROLE",
@@ -50,9 +43,7 @@ class MLflowStack(Stack):
             iam.ManagedPolicy.from_aws_managed_policy_name("AmazonECS_FullAccess")
         )
 
-        # ==================================================
-        # ================== SECRET ========================
-        # ==================================================
+        # Secrets
         db_password_secret = sm.Secret(
             scope=self,
             id="DBSECRET",
@@ -62,9 +53,7 @@ class MLflowStack(Stack):
             ),
         )
 
-        # ==================================================
-        # ==================== VPC =========================
-        # ==================================================
+        # VPC
         public_subnet = ec2.SubnetConfiguration(
             name="Public", subnet_type=ec2.SubnetType.PUBLIC, cidr_mask=28
         )
@@ -87,23 +76,19 @@ class MLflowStack(Stack):
         vpc.add_gateway_endpoint(
             "S3Endpoint", service=ec2.GatewayVpcEndpointAwsService.S3
         )
-        # ==================================================
-        # ================= S3 BUCKET ======================
-        # ==================================================
+        # S3 Bucket
         artifact_bucket = s3.Bucket(
             scope=self,
             id="ARTIFACTBUCKET",
             bucket_name=bucket_name,
             public_read_access=False,
         )
-        # # ==================================================
-        # # ================== DATABASE  =====================
-        # # ==================================================
         # Creates a security group for AWS RDS
         sg_rds = ec2.SecurityGroup(
             scope=self, id="SGRDS", vpc=vpc, security_group_name="sg_rds"
         )
-        # Adds an ingress rule which allows resources in the VPC's CIDR to access the database.
+        # Adds an ingress rule which allows resources in the VPC's CIDR to access the
+        # database.
         sg_rds.add_ingress_rule(
             peer=ec2.Peer.ipv4("10.0.0.0/24"), connection=ec2.Port.tcp(port)
         )
@@ -131,9 +116,6 @@ class MLflowStack(Stack):
             removal_policy=RemovalPolicy.DESTROY,
             deletion_protection=False,
         )
-        # ==================================================
-        # =============== FARGATE SERVICE ==================
-        # ==================================================
         cluster = ecs.Cluster(
             scope=self, id="CLUSTER", cluster_name=cluster_name, vpc=vpc
         )
@@ -187,9 +169,6 @@ class MLflowStack(Stack):
             scale_in_cooldown=Duration.seconds(60),
             scale_out_cooldown=Duration.seconds(60),
         )
-        # ==================================================
-        # =================== OUTPUTS ======================
-        # ==================================================
         CfnOutput(
             scope=self,
             id="LoadBalancerDNS",
