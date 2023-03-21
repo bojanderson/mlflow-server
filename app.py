@@ -8,7 +8,6 @@ from aws_cdk import (
     aws_ecs_patterns as ecs_patterns,
     App,
     Stack,
-    CfnParameter,
     CfnOutput,
     Aws,
     RemovalPolicy,
@@ -22,11 +21,11 @@ class MLflowStack(Stack):
         super().__init__(scope, id, **kwargs)
 
         # CloudFormation Parameters
-        project_name_param = CfnParameter(scope=self, id="ProjectName", type="String")
+        project_name_param = "mlflow-server"
         db_name = "mlflowdb"
         port = 3306
         username = "master"
-        bucket_name = f"{project_name_param.value_as_string}-artifacts-{Aws.ACCOUNT_ID}"
+        bucket_name = f"{project_name_param}-artifacts-{Aws.ACCOUNT_ID}"
         cluster_name = "mlflow"
         service_name = "mlflow"
 
@@ -124,8 +123,8 @@ class MLflowStack(Stack):
             scope=self,
             id="MLflow",
             task_role=role,
-            cpu=4 * 1024,
-            memory_limit_mib=8 * 1024,
+            cpu=512,
+            memory_limit_mib=1024,
         )
 
         container = task_definition.add_container(
