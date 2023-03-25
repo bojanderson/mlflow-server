@@ -1,2 +1,10 @@
 aws-cdk-lib==2.51.1
 constructs==10.1.172
+
+# Notebook stuff
+notebook
+numpy
+pandas
+scikit-learn
+mlflow
+sagemaker
